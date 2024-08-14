@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seating Arrangement Solver</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #444;
+            text-align: center;
+        }
+
+        #questionContainer, #setup, #namesContainer, #rowsContainer {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #setup, #namesContainer, #rowsContainer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        input[type="number"], input[type="text"], select, button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="number"] {
+            width: 60px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #rowsContainer {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+
+        #rows select {
+            min-width: 120px;
+            margin-right: 5px;
+        }
+
+        #answerContainer {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            #setup, #namesContainer, #rowsContainer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #setup input, #setup button, #namesContainer .nameField, #rowsContainer select {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Seating Arrangement Solver</h1>
+
+    <div id="questionContainer">
+        <p id="currentQuestion">Loading question...</p>
+        <button onclick="changeQuestion()">Change Question</button>
+    </div>
+
+    <div id="setup">
+        <label for="numPeople">Number of People:</label>
+        <input type="number" id="numPeople" min="1" max="10" value="1">
+        <button onclick="generateRows()">Generate Seating</button>
+    </div>
+    
+    <div id="namesContainer">
+        <div id="namesInput"></div>
+        <div id="rows"></div>
+    </div>
+
+    <button onclick="showAnswer()">Show Answer</button>
+
+    <div id="answerContainer">
+        <p>The correct answer is:</p>
+        <p id="correctAnswer">[Correct answer will be shown here]</p>
+    </div>
+
+    <script>
+        const questions = [
+            "1. A, P, R, X, S and Z are sitting in a row. S and Z are in the centre. A and P are at the ends. R is sitting to the left of A. Who is to the right of P ?",
+            "2.A, B, C, D and E are sitting on a bench. A is sitting next to B, C is sitting next to D, D is not sitting with E who is on the left end of the bench. C is on the second position from the right. A is to the right of B and E. A and C are sitting together. In which position A is sitting ?",
+            "3. B, L, M, N, P, and Q are in a row. P and Q are in the center, B and L are at the ends. M is sitting to the left of B. Who is to the right of L?",
+            "4. Five boys are sitting to be photographed. S is to the left of R and to the right of B. M is to the right of R. E is between R and M Who is sitting immediate right to E? and second from Right ",
+            "5. Five girls are standing in a line. One of the two girls at extreme end is P and the other is B. A is to the right of S. C is to the left of the B. What is the position of A from the left?",
+            "6. There are six persons sitting in a row facing North. A is sitting towards immediate left of B and immediate right of C. C is sitting to immediate right of F. D is immediate right of E who is to the left of F, then which two people are sitting in the centre?",
+            "7. Six friends  A, B, C, D, E, and F  are sitting in a straight line facing North. A is sitting fourth to the left of B and second to the right of F. D is sitting to the immediate left of C, who is not sitting at either of the ends. Who is sitting at the extreme right end of the line??",
+            "8. Seven people  A, B, C, D, E, F, and G are sitting in a row facing North. A is sitting at one of the ends and D is sitting fifth to the right of A. E is sitting to the immediate right of B who is sitting second to the left of F. Who is sitting second to the left of G? ?",
+            "9. Six friends - Sheldon, Jack, Justin, Bruce, Peter, and Nicholas are sitting around a circular table, not necessarily in the same order. All of them are facing the center.             I) Peter is sitting exactly opposite to Jack.                II) Justin is the only person sitting between Bruce and Peter.              III) Sheldon is sitting to the immediate left of Jack.           Q)Who among the following are not the immediate neighbours??",
+            "10. Six friends - Sheldon, Jack, Justin, Bruce, Peter, and Nicholas are sitting around a circular table, not necessarily in the same order. All of them are facing the center.             I) Peter is sitting exactly opposite to Jack.                II) Justin is the only person sitting between Bruce and Peter.              III) Sheldon is sitting to the immediate left of Jack.           Q)Who is sitting second to the right of Peter?      Q)Who is sitting to the opposite of Sheldon?            Q)Which of the following is false regarding the position of Jack??",
+            // Add more questions up to 50
+        ];
+
+        const answers = [
+            "X (sitting arrangement is P X S Z R A)",
+            "Between B and C (E B A C D)",
+            "The seating arrangement is as follows.(L N P Q M B)Therefore, the right of L is N.",
+            "M E (B S R E M)",
+            "P S A C B",
+            " F and C",
+            "F",
+            "C",
+            "Nicholas and Justin",
+            "Sheldon         Justin      Jack is sitting third of the left of Nicholas.",
+            // Add more answers corresponding to the questions
+        ];
+
+        let currentQuestionIndex = 0;
+
+        function changeQuestion() {
+            currentQuestionIndex = Math.floor(Math.random() * questions.length);
+            document.getElementById('currentQuestion').innerText = questions[currentQuestionIndex];
+        }
+
+        function generateRows() {
+            const numPeople = document.getElementById('numPeople').value;
+            const namesContainer = document.getElementById('namesInput');
+            const rowsContainer = document.getElementById('rows');
+            
+            namesContainer.innerHTML = '';
+            rowsContainer.innerHTML = '';
+
+            // Create input fields for names
+            for (let i = 0; i < numPeople; i++) {
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.id = `name${i}`;
+                nameInput.placeholder = `Enter name ${i + 1}`;
+                nameInput.className = 'nameField';
+                nameInput.oninput = updateDropdowns; // Update dropdowns when names change
+                namesContainer.appendChild(nameInput);
+            }
+            
+            // Create dropdowns for seating arrangement
+            for (let i = 0; i < numPeople; i++) {
+                const select = document.createElement('select');
+                select.className = 'seatSelect';
+                select.setAttribute('data-index', i);
+                select.onchange = updateDropdowns;
+
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.text = `Seat ${i + 1}: Select a person`;
+                select.appendChild(defaultOption);
+
+                rowsContainer.appendChild(select);
+            }
+
+            updateDropdowns(); // Initial population of dropdowns
+        }
+
+        function updateDropdowns() {
+            const selects = document.getElementsByClassName('seatSelect');
+            const usedNames = [];
+
+            // Gather selected names
+            for (const select of selects) {
+                if (select.value !== '') {
+                    usedNames.push(select.value);
+                }
+            }
+
+            // Update each dropdown
+            for (const select of selects) {
+                const currentIndex = select.getAttribute('data-index');
+                const selectedValue = select.value;
+
+                // Clear existing options
+                select.innerHTML = '';
+
+                // Add the default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.text = `Seat ${parseInt(currentIndex) + 1}: Select a person`;
+                select.appendChild(defaultOption);
+
+                // Add available options based on entered names
+                for (let i = 0; i < selects.length; i++) {
+                    const nameInput = document.getElementById(`name${i}`);
+                    if (nameInput && nameInput.value !== '') {
+                        const option = document.createElement('option');
+                        option.value = nameInput.value;
+                        option.text = nameInput.value;
+
+                        if (usedNames.includes(nameInput.value) && nameInput.value !== selectedValue) {
+                            option.disabled = true;
+                        }
+
+                        select.appendChild(option);
+                    }
+                }
+
+                // Restore the previously selected value
+                select.value = selectedValue;
+            }
+        }
+
+        function showAnswer() {
+            const answerContainer = document.getElementById('answerContainer');
+            const correctAnswer = document.getElementById('correctAnswer');
+
+            // Display the correct answer for the current question
+            correctAnswer.innerText = answers[currentQuestionIndex] || "No answer available.";
+            answerContainer.style.display = 'block';
+        }
+
+        // Initialize with the first question
+        window.onload = changeQuestion;
+    </script>
+</body>
+</html>
